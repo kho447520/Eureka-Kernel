@@ -1,61 +1,64 @@
 name: Build Eureka Kernel A10 with KernelSU Next
 
 on:
-  workflow_dispatch: # Cho phép bạn bấm nút "Run workflow" thủ công bất cứ lúc nào
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-    - name: Cập nhật hệ thống và cài đặt công cụ biên dịch
-      run: |
-        sudo apt update
-        sudo apt install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libssl-dev libncurses5-dev lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2 bc lib32readline-dev lib32z-dev lzma u-boot-tools pngcrush schedtool liblz4-tool libtinfo5 python3
+      - name: Cập nhật hệ thống và cài đặt công cụ biên dịch
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git ccache automake flex lzop bison gperf build-essential zip \
+            curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev \
+            libssl-dev libncurses-dev lib32ncurses-dev
 
-    - name: Tải mã nguồn Eureka Kernel chính thức
-      run: |
-        git clone --depth=1 https://github.com kernel
+      - name: Tải mã nguồn Eureka Kernel chính thức
+        run: |
+          git clone --depth=1 https://github.com/<owner>/<repo> kernel
 
-    - name: Tải bộ công cụ Toolchain GCC 4.9
-      run: |
-        git clone --depth=1 https://googlesource.com toolchain
+      - name: Tải bộ công cụ Toolchain GCC 4.9
+        run: |
+          git clone --depth=1 https://github.com/<toolchain-owner>/<toolchain-repo> toolchain
 
-    - name: Tích hợp KernelSU Next v3.4.2
-      run: |
-        cd kernel
-        curl -LSs "https://githubusercontent.com" | bash -s v3.4.2
+      - name: Tích hợp KernelSU Next v3.4.2
+        run: |
+          cd kernel
+          curl -LSs https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/main/kernel/setup.sh | bash -s v3.4.2
 
-    - name: Cấu hình file Defconfig cho GSI ROM và KSU Next
-      run: |
-        cd kernel
-        cat <<EOT >> arch/arm64/configs/exynos7885_defconfig
-        
-        # --- EUREKA KSU NEXT CONFIG ---
-        CONFIG_KSU=y
-        CONFIG_KSU_NEXT=y
-        CONFIG_KPROBES=y
-        CONFIG_HAVE_KPROBES=y
-        
-        # --- FIX BOOTLOOP GSI ROM ---
-        CONFIG_OVERLAY_FS=y
-        CONFIG_DEVTMPFS=y
-        CONFIG_DEVTMPFS_MOUNT=y
-        CONFIG_ANDROID_BINDER_IPC=y
-        CONFIG_ANDROID_BINDERFS=y
-        CONFIG_ASHMEM=y
-        EOT
+      - name: Cấu hình file Defconfig cho GSI ROM và KSU Next
+        run: |
+          cd kernel
+          cat <<'EOT' >> arch/arm64/configs/exynos7885_defconfig
 
-    - name: Tiến hành biên dịch Kernel
-      run: |
-        cd kernel
-        export ARCH=arm64
-        export SUBARCH=arm64
-        export CROSS_COMPILE=$GITHUB_WORKSPACE/toolchain/bin/aarch64-linux-android-
-        make exynos7885_defconfig
-        make -j$(nproc)
+          # --- EUREKA KSU NEXT CONFIG ---
+          CONFIG_KSU=y
+          CONFIG_KSU_NEXT=y
+          CONFIG_KPROBES=y
+          CONFIG_HAVE_KPROBES=y
 
-    - name: Đóng gói thành phẩm gửi lên GitHub Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: Eureka_Kernel_A10_KSU_Next
-        path: kernel/arch/arm64/boot/Image.gz-dtb
+          # --- FIX BOOTLOOP GSI ROM ---
+          CONFIG_OVERLAY_FS=y
+          CONFIG_DEVTMPFS=y
+          CONFIG_DEVTMPFS_MOUNT=y
+          CONFIG_ANDROID_BINDER_IPC=y
+          CONFIG_ANDROID_BINDERFS=y
+          CONFIG_ASHMEM=y
+          EOT
+
+      - name: Tiến hành biên dịch Kernel
+        run: |
+          cd kernel
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=$GITHUB_WORKSPACE/toolchain/bin/aarch64-linux-android-
+          make exynos7885_defconfig
+          make -j$(nproc)
+
+      - name: Đóng gói thành phẩm gửi lên GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Eureka_Kernel_A10_KSU_Next
+          path: kernel/arch/arm64/boot/Image.gz-dtb
