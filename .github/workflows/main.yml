@@ -15,13 +15,13 @@ jobs:
             curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev \
             libssl-dev libncurses-dev lib32ncurses-dev
 
-      - name: Tải mã nguồn Eureka Kernel chính thức
-        run: |
-          git clone --depth=1 https://github.com/<owner>/<repo> kernel
+ - name: Tải mã nguồn Eureka Kernel chính thức
+  run: |
+    git clone --depth=1 https://github.com/kho447520/Eureka-Kernel.git kernel
 
-      - name: Tải bộ công cụ Toolchain GCC 4.9
-        run: |
-          git clone --depth=1 https://github.com/<toolchain-owner>/<toolchain-repo> toolchain
+- name: Tải bộ công cụ Toolchain GCC 4.9
+  run: |
+    git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang.git toolchain
 
       - name: Tích hợp KernelSU Next v3.4.2
         run: |
